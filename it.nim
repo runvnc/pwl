@@ -1,7 +1,7 @@
 import httpclient, strutils, os, streams, htmlparser, xmltree,
        strtabs
 
-var html = getContent("http://github.com/")
+var html = getContent(paramStr(1))
 
 var readTag = false
 var tag = ""
