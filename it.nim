@@ -1,8 +1,10 @@
-import httpclient, strutils, os, streams, htmlparser, xmltree,
-       strtabs
+import sockets, strutils, os, strtabs
 
-var html = getContent(paramStr(1))
+var client: Socket
 
+var html = ""
+
+var outp = ""
 var readTag = false
 var tag = ""
 var text = ""
@@ -26,7 +28,7 @@ proc handleTag(tag: var string) =
 
 proc nextLine() =
   if not lastDiv:
-    echo()
+    outp &= "\n"
   lastDiv = true
 
 proc foundTag() =
@@ -38,7 +40,7 @@ proc foundTag() =
     nextLine()
     noTag = true
   elif tag[0] == '/':
-    write(stdout, " ")
+    outp &= " "
     noTag = true
   else:
     noTag = false
@@ -69,28 +71,47 @@ proc add(c:string) =
       elif not inSpecial and 
         c != "\r" and c != "\n" and
         c != "\t":
-        write(stdout, c)
+        outp = outp & c
         if c != " ":
           lastDiv = false
 
-echo html.len
-
-for i,c in html:
-  case c
-  of '<' :
-    if not inScript:
-      openTag()
-    elif html[i..i+7] == "<script":
-      openTag()
-  of '>' :
-    if not inScript:
-      foundTag()
-    elif html[i-8..i] == "</script>":
-      foundTag()
-      inScript = false
-  else:
-    if readTag:
-      tag &= $c
+proc process(html) =
+  outp = ""
+  for i,c in html:
+    case c
+    of '<' :
+      if not inScript:
+        openTag()
+      elif html[i..i+7] == "<script":
+        openTag()
+    of '>' :
+      if not inScript:
+        foundTag()
+      elif html[i-8..i] == "</script>":
+        foundTag()
+        inScript = false
     else:
-      add($c)
+      if readTag:
+        tag &= $c
+      else:
+        add($c)
+
+  if outp.len > 1:
+    echo outp
+
+proc conn()  =
+  client = socket()
+
+  client.connect(paramStr(1), Port(80))
+
+  client.send("GET / HTTP/1.1\r\l")
+  client.send("host: " & paramStr(1) & "\r\l")
+  client.send("\r\l")
+
+  var cont = true
+  while cont:
+    cont = client.recvLine(html)
+    process(html)
+
+conn()
 
