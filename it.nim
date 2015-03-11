@@ -1,4 +1,4 @@
-import sockets, strutils, os, strtabs
+import sockets, strutils, os, strtabs, text
 
 var client: Socket
 
@@ -7,7 +7,7 @@ var html = ""
 var outp = ""
 var readTag = false
 var tag = ""
-var text = ""
+var outText = ""
 var noTag = true
 var inScript = false
 var showText = false
@@ -32,7 +32,7 @@ proc nextLine() =
   lastDiv = true
 
 proc foundTag() =
-  text = ""
+  outText = ""
   readTag = false
   let tokens = tag.split(' ')
   tag = tokens[0]
@@ -59,7 +59,7 @@ proc foundTag() =
 proc closeTag() =
   handleTag(tag)
   tag = ""
-  text = ""
+  outText = ""
 
 proc add(c:string) =
   if showText:
@@ -74,6 +74,14 @@ proc add(c:string) =
         outp = outp & c
         if c != " ":
           lastDiv = false
+
+var lines = @[""]
+
+proc addLine(str) =
+  var nl = str.split('\l')
+  for l in nl:
+    lines.add(l)
+  drawLines(lines)
 
 proc process(html) =
   outp = ""
@@ -97,7 +105,7 @@ proc process(html) =
         add($c)
 
   if outp.len > 1:
-    echo outp
+    addLine(outp)
 
 proc conn()  =
   client = socket()
