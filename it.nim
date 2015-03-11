@@ -2,6 +2,7 @@ import sockets, strutils, os, strtabs, render, httpclient
 
 var client: Socket
 
+var host = ""
 var html = ""
 
 var outp = ""
@@ -67,7 +68,7 @@ proc foundTag() =
     elif src[0..2] == "htt":
       getimg src
     else:
-      getimg "http://" & paramStr(1) & '/' & src
+      getimg "http://" & host & '/' & src
 
   elif tag[0] == '/':
     outp &= " "
@@ -140,10 +141,10 @@ proc process(html) =
 proc conn()  =
   client = socket()
 
-  client.connect(paramStr(1), Port(80))
+  client.connect(host, Port(80))
 
   client.send("GET / HTTP/1.1\r\l")
-  client.send("host: " & paramStr(1) & "\r\l")
+  client.send("host: " & host & "\r\l")
   client.send("\r\l")
 
   var cont = true
@@ -151,5 +152,8 @@ proc conn()  =
     cont = client.recvLine(html)
     process(html)
 
-conn()
+while true:
+  echo "Enter hostname:"
+  host = readLine(stdin)
+  conn()
 
