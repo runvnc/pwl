@@ -26,6 +26,8 @@ proc drawText*(text:string, x, y:int16) =
   message = renderText_Solid( font, text, textColor)
   apply_surface(x, y, message, screen)
 
+var images: seq[PSurface] = @[]
+
 proc drawLines*(lines) =
   discard screen.fillrect(nil, 0x000000)
   var i: int16
@@ -33,5 +35,14 @@ proc drawLines*(lines) =
   for line in lines:
     drawText(line, 0, i*30)
     i += 1
+  var n: int16
+  n = 0
+  for img in images:
+    apply_surface(0,n*20,img,screen)
+    n += 1
+ 
   discard screen.flip()
+
+proc drawImage*(fname) =
+  images.add(img_Load(fname))
 

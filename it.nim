@@ -1,4 +1,4 @@
-import sockets, strutils, os, strtabs, text
+import sockets, strutils, os, strtabs, render, httpclient
 
 var client: Socket
 
@@ -14,6 +14,19 @@ var showText = false
 var inQuotes = false
 var inSpecial = false
 var lastDiv = false
+
+proc getimg(href:string) =
+  var href2 = href
+  if href[href.len-1] == '/':
+    href2 = href[0..href.len-2]
+  echo "Trying to download image from " & href2
+  let parts = href2.split('/')
+  let fname = parts[parts.len-1]
+  try:
+    writeFile(parts[parts.len-1], getContent(href2))
+    drawImage(fname)
+  except:
+    echo "Problem downloading file"
 
 proc openTag() =
   tag = ""
@@ -31,6 +44,13 @@ proc nextLine() =
     outp &= "\n"
   lastDiv = true
 
+proc getAttr(tokens, attr):string =
+  var i = 0
+  while tokens[i].find(attr) != 0:
+    i += 1
+  var parts = tokens[i].split('=')
+  return parts[1].replace("\"","").replace("\'","")
+
 proc foundTag() =
   outText = ""
   readTag = false
@@ -39,6 +59,16 @@ proc foundTag() =
   if tag == "/div" or tag == "/p":
     nextLine()
     noTag = true
+  elif tag == "img":
+    var src = getAttr(tokens, "src")
+    echo src
+    if src[0..1] == "//":
+      getimg "http:" & src
+    elif src[0..2] == "htt":
+      getimg src
+    else:
+      getimg "http://" & paramStr(1) & '/' & src
+
   elif tag[0] == '/':
     outp &= " "
     noTag = true
