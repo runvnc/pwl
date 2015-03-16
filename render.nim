@@ -6,7 +6,7 @@ var font: PFont
 var startLine = 0
 var document: Doc = @[]
 
-var textColor = TColor(r: 255, g:255, b:255)
+var textColor = TColor(r: 20, g:20, b:20)
 
 proc apply_surface(x,y:int16, source, destination: PSurface,
                     clip:PRect = nil ) =
@@ -25,13 +25,13 @@ proc clean_up*() =
   sdl.quit()
 
 proc drawText*(text:string, x, y:int16) =
-  message = renderText_Solid( font, text, textColor)
+  message = renderText_Blended( font, text, textColor)
   apply_surface(x, y, message, screen)
 
 var images: seq[PSurface] = @[]
 
 proc drawLines() =
-  discard screen.fillrect(nil, 0x000000)
+  discard screen.fillrect(nil, 0xffffff)
   var i: int16
   var n: int16
   n = 0
@@ -60,12 +60,12 @@ proc loop() =
 
   while runGame:
     var found = pollEvent(addr evt)
-    
+
     if found != 0:
-      echo "found evt"
+      #echo "found evt"
       case evt.kind:
       of KEYDOWN:
-        echo "key"
+        #echo "key"
         var keyEvt = evKeyboard(addr evt)
         if keyEvt.keysym.sym == K_ESCAPE:
           runGame = false
@@ -73,20 +73,37 @@ proc loop() =
         elif keyEvt.keysym.sym == K_DOWN:
           startLine += 1
           drawLines()
+        elif keyEvt.keysym.sym == K_BACKSPACE:
+          host = host.substr(0, host.len-2)
+          #echo host
         elif keyEvt.keysym.sym == K_RETURN:
-          spawn loadPage(host)
+          loadChan.send(host)
           host = ""
+          
         else:
-          host &= $(cast[char](keyEvt.which))
+          if host == "":
+            startLine = 0
+            document = @[]
+          #echo keyEvt.keysym.sym
+          var ch = chr(keyEvt.keysym.sym)
+          host &= $(ch)
+          echo host
       else:
-        echo "event"
+        var dummy = true
+        #echo "event"
 
+    while chan.peek() > 0:
       var newLine = tryRecv(chan)
+      #echo "next"
       if newLine.dataAvailable:
         document.add(newLine.msg)
+        #echo "drawing"
         drawLines()
+        #echo "back from draw"
 
   system.quit()
 
+drawLines()
+spawn loadPage("")
 loop()
 

@@ -1,11 +1,10 @@
 import sockets, strutils, os, strtabs, doc, httpclient
 
-proc loadPage*(host:string) {.thread.} =
+proc loadPage*(str:string) {.thread.} =
   var client: Socket
 
-  var host = ""
   var html = ""
-
+  var host = ""
   var outp = ""
   var readTag = false
   var tag = ""
@@ -23,14 +22,14 @@ proc loadPage*(host:string) {.thread.} =
     var href2 = href
     if href[href.len-1] == '/':
       href2 = href[0..href.len-2]
-    echo "Trying to download image from " & href2
+    ##echo "Trying to download image from " & href2
     let parts = href2.split('/')
     let fname = parts[parts.len-1]
     #try:
     #3  writeFile(parts[parts.len-1], getContent(href2))
     #  # drawImage(fname)
     #except:
-    #  echo "Problem downloading file"
+    #  #echo "Problem downloading file"
 
   proc openTag() =
     tag = ""
@@ -55,8 +54,8 @@ proc loadPage*(host:string) {.thread.} =
     var parts = tokens[i].split('=')
     return parts[1].replace("\"","").replace("\'","")
 
-  proc endLink() =
-    echo "/a"  
+  #proc endLink() =
+  #  #echo "/a"  
 
   proc foundTag() =
     outText = ""
@@ -66,12 +65,12 @@ proc loadPage*(host:string) {.thread.} =
     if tag == "/div" or tag == "/p":
       nextLine()
       noTag = true
-    elif tag == "/a":
-      endLink()
-      noTag = true
+    #elif tag == "/a":
+    #  endLink()
+    #  noTag = true
     elif tag == "img":
       var src = getAttr(tokens, "src")
-      echo src
+      #echo src
       if src[0..1] == "//":
         getimg "http:" & src
       elif src[0..2] == "htt":
@@ -149,10 +148,16 @@ proc loadPage*(host:string) {.thread.} =
       addLine(outp)
 
   proc conn()  =
+    echo "Waiting for hostname.."
+    host = loadChan.recv()
+    echo "Got host: " & host
+
+    chan.send(@[Node(kind:nkText, text: "Connecting..")])
     client = socket()
 
     client.connect(host, Port(80))
 
+    chan.send(@[Node(kind:nkText, text: "Connected.")])
     client.send("GET / HTTP/1.1\r\l")
     client.send("host: " & host & "\r\l")
     client.send("\r\l")
@@ -161,5 +166,6 @@ proc loadPage*(host:string) {.thread.} =
     while cont:
       cont = client.recvLine(html)
       process(html)
+    conn()
 
   conn()
