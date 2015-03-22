@@ -1,4 +1,4 @@
 #!/bin/bash
-#nim c -d:useSysAssert -d:useGCAssert --threads:on -d:ssl render.nim
-nim c -d:release --threads:on -d:ssl render.nim
+nim c -d:useSysAssert -d:useGCAssert --threads:on -d:ssl render.nim
+#nim c -d:release --threads:on -d:ssl render.nim
 

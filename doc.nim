@@ -3,7 +3,8 @@ type
 
   Link* = tuple
     href: string
-    subs: ref Node
+    text: string
+    #subs: ref Node
 
   NodeKind* = enum
     nkText,

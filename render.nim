@@ -6,7 +6,9 @@ var font: PFont
 var startLine = 0
 var document: Doc = @[]
 
+
 var textColor = TColor(r: 20, g:20, b:20)
+var linkColor = TColor(r: 250, g:10, b:60)
 
 proc apply_surface(x,y:int16, source, destination: PSurface,
                     clip:PRect = nil ) =
@@ -25,21 +27,39 @@ proc clean_up*() =
   sdl.quit()
 
 proc drawText*(text:string, x, y:int16) =
-  message = renderText_Blended( font, text, textColor)
+  message = renderUTF8_Blended( font, text, textColor)
+  apply_surface(x, y, message, screen)
+
+proc drawLink(link:Link, x, y:int16) =
+  message = renderUTF8_Blended( font, link.text, linkColor)
   apply_surface(x, y, message, screen)
 
 var images: seq[PSurface] = @[]
+
+var n:int16 = 0
 
 proc drawLines() =
   discard screen.fillrect(nil, 0xffffff)
   var i: int16
   var n: int16
-  n = 0
   
+  var w:cint = 0
+  var h:cint = 0  
   for i in startLine..document.len-1:
     let line: Line = document[i]
-    let node = line[0]
-    drawText(node.text, 0, n*30)
+    var x:int16 = 0
+    for node in line:
+      case node.kind
+      of nkText:
+        discard sizeUTF8(font, node.text, w, h)
+        drawText(node.text, x, n*30)
+        x += cast[int16](w)
+      of nkLink:
+        discard sizeUTF8(font, node.link.text, w, h)
+        drawLink(node.link, x, n*30)
+        x += cast[int16](w)
+      else:
+        var dummy = 0
     n += 1
   #n = 0
   #for img in images:

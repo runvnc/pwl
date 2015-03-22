@@ -2,7 +2,8 @@ import sockets, strutils, os, strtabs, doc, httpclient
 
 proc loadPage*(str:string) {.thread.} =
   var client: Socket
-
+  var currLine:Line = @[]
+  var currHref = ""
   var html = ""
   var host = ""
   var outp = ""
@@ -54,8 +55,10 @@ proc loadPage*(str:string) {.thread.} =
     var parts = tokens[i].split('=')
     return parts[1].replace("\"","").replace("\'","")
 
-  #proc endLink() =
-  #  #echo "/a"  
+  proc endLink() =
+    currLine.add(Node(kind:nkLink, link: (href:currHref, text:outp)))
+    currHref = ""
+    echo "/a"  
 
   proc foundTag() =
     outText = ""
@@ -65,9 +68,13 @@ proc loadPage*(str:string) {.thread.} =
     if tag == "/div" or tag == "/p":
       nextLine()
       noTag = true
-    #elif tag == "/a":
-    #  endLink()
-    #  noTag = true
+    elif tag == "/a":
+      endLink()
+      noTag = true
+    elif tag == "a":
+      currLine.add(Node(kind:nkText, text:outp))
+      currHref = getAttr(tokens, "href")
+      
     elif tag == "img":
       var src = getAttr(tokens, "src")
       #echo src
@@ -117,11 +124,16 @@ proc loadPage*(str:string) {.thread.} =
   var lines = @[""]
 
   proc addLine(str) =
-    var nl = str.split('\l')
-    for l in nl:
-      var toSend: Line
-      toSend = @[Node(kind: nkText, text: l)]
-      chan.send(toSend)
+    if str.len > 0:
+      currLine.add(Node(kind:nkText,text:str))
+    if currLine.len > 0:
+      chan.send(currLine)
+      currLine = @[]
+    #var nl = str.split('\l')
+    #for l in nl:
+    #  var toSend: Line
+    #  toSend = @[Node(kind: nkText, text: l)]
+    #  chan.send(toSend)
 
   proc process(html) =
     outp = ""
